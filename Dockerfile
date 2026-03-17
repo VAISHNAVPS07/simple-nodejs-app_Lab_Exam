@@ -1,19 +1,20 @@
-ARG ARCH=
-ARG IMAGE_BASE=16-alpine
+# Use a stable Node LTS on Alpine for small image size
+FROM node:18-alpine
 
-FROM ${ARCH}node:$IMAGE_BASE
-LABEL Name="Node.js Demo App" Version=4.8.5
-LABEL org.opencontainers.image.source = "https://github.com/benc-uk/nodejs-demoapp"
-ENV NODE_ENV production
-WORKDIR /app 
+WORKDIR /app
 
-# For Docker layer caching do this BEFORE copying in rest of app
-COPY src/package*.json ./
-RUN npm install --production --silent
+# Set environment
+ENV NODE_ENV=production
 
-# NPM is done, now copy in the rest of the project to the workdir
-COPY src/. .
+# Install only production dependencies (uses package-lock.json if present)
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Port 3000 for our Express server 
+# Copy app source
+COPY . .
+
+# Expose the port your app listens on
 EXPOSE 3000
-ENTRYPOINT ["npm", "start"]
+
+# Start the app using node (safe because package.json 'start' has a typo)
+CMD ["node", "index.js"]
